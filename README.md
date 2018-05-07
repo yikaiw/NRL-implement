@@ -9,14 +9,14 @@ Re-implement of four Network representation learning (NRL) algorithms: DeepWalk,
 ## Data preparing
 First, download two datasets:
 
-* [Cora](https://docs.google.com/spreadsheets/d/1WJ0-2aIhCA37Hj_-Na4umXwYqBGDWKXPeaRj0ECnLw4/edit?usp=sharing)(citation dataset).
-* [Tencent Weibo](https://docs.google.com/spreadsheets/d/1F1mNarXl8u1CFICm3WufqZrWvCgPkTUqjrXJNnaDsEg/edit#gid=0)(following network)
+* [Cora](https://docs.google.com/spreadsheets/d/1WJ0-2aIhCA37Hj_-Na4umXwYqBGDWKXPeaRj0ECnLw4/edit?usp=sharing): citation dataset.
+* [Tencent Weibo](https://docs.google.com/spreadsheets/d/1F1mNarXl8u1CFICm3WufqZrWvCgPkTUqjrXJNnaDsEg/edit#gid=0): following network.
 
 Second, build new folder 'data' and put the two datasets into 'data'.
 
 
 ## Training
-For ned2vec
+For node2vec
 
 ```
 python -m node2vec
