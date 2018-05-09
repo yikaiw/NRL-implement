@@ -1,83 +1,32 @@
-import sys
-import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
-from generator import Generator
-from discriminator import Discriminator
-import config
-import evaluation.eval_link_prediction as elp
-import utils
+from graphgan.discriminator import Discriminator
+from graphgan.generator import Generator
+import graphgan.utils as utils
 import collections
 import tqdm
 import copy
 import numpy as np
 import tensorflow as tf
-import multiprocessing
+import graphgan.config as config
+import graphgan.eval_link_prediction as elp
 
 
 class GraphGan(object):
     def __init__(self):
-        self.user_num = 0
-        self.item_num = 0
-        self.linked_nodes = {}
-        self.user_nodes = []
-        self.user_item_nodes = []
-        self.trace = []
-        self.trees = {}
-        self.generator = None
-        self.discriminator = None
+        self.n_node, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
+        self.root_nodes = [i for i in range(self.n_node)]
+        self.discriminator, self.generator = None, None
         self.saver = tf.train.Saver()
         self.sess = None
-
-        self.build_nodes()
         self.build_gan()
-        self.mul_construct_trees()
+        self.trees = self.construct_tree(self.root_nodes)
         self.tf_config()
 
-    def build_nodes(self):
-        print("Reading edges")
-        self.user_num, self.item_num, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
-        assert self.user_num == config.user_num and self.item_num == config.item_num
-        user_item_num = self.user_num + self.item_num
-        self.user_nodes = list(range(self.user_num))  # root nodes
-        self.user_item_nodes = list(range(user_item_num))
-
-        print("Connecting item nodes")
-        item = {}
-        for user_node in tqdm.tqdm(self.user_nodes):
-            for item_i in self.linked_nodes[user_node]:
-                for item_j in self.linked_nodes[user_node]:
-                    if item_i == item_j:
-                        continue
-                    if item.get(item_i) is None:
-                        item[item_i] = {}
-                    if item.get(item_j) is None:
-                        item[item_j] = {}
-                    if item[item_i].get(item_j) is None:
-                        item[item_i][item_j] = True
-                        item[item_j][item_i] = True
-                        if self.linked_nodes.get(item_i) is None:
-                            self.linked_nodes[item_i] = []
-                        if self.linked_nodes.get(item_j) is None:
-                            self.linked_nodes[item_j] = []
-                        self.linked_nodes[item_i].append(item_j)
-                        self.linked_nodes[item_j].append(item_i)
-
-        config.max_degree = utils.get_max_degree(self.linked_nodes)
-
     def build_gan(self):
-        embed_init_g = None
-        embed_init_d = None
-        if config.pretrain:
-            print("Reading pretrained embeddings")
-            embed_init_g = utils.read_emd(config.embed_init_filename_g, self.user_num, self.item_num, config.embed_dim)
-            embed_init_d = utils.read_emd(config.embed_init_filename_d, self.user_num, self.item_num, config.embed_dim)
-
-        print("Building the gan network")
-        with tf.variable_scope("generator"):
-            self.generator = Generator(user_item_nodes=self.user_item_nodes, embed_init=embed_init_g)
-        with tf.variable_scope("discriminator"):
-            self.discriminator = Discriminator(user_item_nodes=self.user_item_nodes, embed_init=embed_init_d)
+        print('Building the gan network', flush=True)
+        with tf.variable_scope('generator'):
+            self.generator = Generator(self.n_node, config.embed_dim, config.lambda_gen, config.lr_gen)
+        with tf.variable_scope('discriminator'):
+            self.discriminator = Discriminator(n_node=self.n_node)
 
     def tf_config(self):
         config = tf.ConfigProto()
@@ -87,23 +36,10 @@ class GraphGan(object):
         self.sess.run(init_op)
 
     def sample_for_gan(self, root, tree, sample_num, all_score, sample_for_dis):
-        """ sample the nodes from the tree
-
-        Args:
-            root: int, root, the query
-            tree: dict, tree information
-            sample_num: the number of the desired sampling nodes
-            all_score: pre-computed score matrix, speed the sample process
-            sample_for_dis: bool, indicates it is sampling for generator or discriminator
-        Returns:
-            sample: list, include the index of the sampling nodes
-        """
-
         assert sample_for_dis in [False, True]
-
         sample = []
+        self.trace = []
         n = 0
-
         while len(sample) < sample_num:
             node_select = root
             node_father = -1
@@ -115,11 +51,10 @@ class GraphGan(object):
                     node_neighbor = tree[node_select][1:]
                 else:
                     node_neighbor = tree[node_select]
-
                 flag = 0
                 if node_neighbor == []:  # the tree only has the root
                     return sample
-                if sample_for_dis is True:  # only sample the negative examples for discriminator, thus should exclude the root node tobe sampled
+                if  sample_for_dis == True:  # only sample the negative examples for discriminator, thus should exclude the root node tobe sampled
                     if node_neighbor == [root]:
                         return sample
                     if root in node_neighbor:
@@ -145,44 +80,13 @@ class GraphGan(object):
     def softmax(self, x):
         e_x = np.exp(x - np.max(x))  # for numberation stablity
         return e_x / e_x.sum()
-        
-    def mul_construct_trees(self):
-        """use the multiprocessing to speed the process of constructing trees for recommendation system"""
-
-        print("Constructing trees")
-        if config.use_mul:
-            cores = multiprocessing.cpu_count() // 2
-            pool = multiprocessing.Pool(cores)
-            new_nodes = []
-            node_per_core = self.user_num // cores
-            for i in range(cores):
-                if i != cores - 1:
-                    new_nodes.append(self.user_nodes[i*node_per_core:(i+1)*node_per_core])
-                else:
-                    new_nodes.append(self.user_nodes[i*node_per_core:])
-            trees_result = pool.map(self.construct_tree, new_nodes)
-            for tree in trees_result:
-                self.trees.update(tree)
-        else:
-            self.trees = self.construct_tree(self.user_nodes)
-        # serialized the trees to the disk
-        print("Dump the trees to the disk")
 
     def construct_tree(self, nodes):
-        """use the BFS algorithm to construct the trees
-
-        Works OK.
-        test case: [[0,1],[0,2],[1,3],[1,4],[2,4],[3,5]]
-        "Node": [father, children], if node is the root, then the father is itself.
-        Args:
-            nodes:
-        Returns:
-            trees: dict, <key, value>:<node_id, {dict(store the neighbor nodes)}>
-        """
+        print('Constructing Trees.', flush=True)
         trees = {}
         for root in tqdm.tqdm(nodes):
             trees[root] = {}
-            tmp = copy.copy(self.linked_nodess[root])
+            tmp = copy.copy(self.linked_nodes[root])
             trees[root][root] = [root] + tmp
             if len(tmp) == 0:  # isolated user
                 continue
@@ -195,7 +99,7 @@ class GraphGan(object):
             while len(queue) > 0:
                 cur_node = queue.pop()
                 used_nodes.add(cur_node)
-                for sub_node in self.linked_nodess[cur_node]:
+                for sub_node in self.linked_nodes[cur_node]:
                     if sub_node not in used_nodes:
                         queue.appendleft(sub_node)
                         used_nodes.add(sub_node)
@@ -203,17 +107,14 @@ class GraphGan(object):
                         trees[root][sub_node] = [cur_node]
         return trees
 
-
     def generate_for_d(self):
-        """Generate the pos and neg samples for the Discriminator, and record them in the txt file"""
-
         self.samples_rel = []
         self.samples_q = []
         self.samples_label = []
         all_score = self.sess.run(self.generator.all_score)
         for u in self.root_nodes:
-            if np.random.rand() < config.update_ratio:
-                pos = self.linked_nodess[u]  # pos samples
+            if np.random.rand() < config.update_ratio:  #
+                pos = self.linked_nodes[u]  # pos samples
                 if len(pos) < 1:
                     continue
                 self.samples_rel.extend(pos)
@@ -227,12 +128,6 @@ class GraphGan(object):
                 self.samples_q.extend(len(pos) * [u])
 
     def get_batch_data(self, index, size):
-        """ take out sample of size from the samples
-        Args:
-            index: the start index
-            size: the number of the batch, may not equal to batch size
-        """
-
         q_node = self.samples_q[index:index+size]
         rel_node = self.samples_rel[index:index+size]
         label = self.samples_label[index:index+size]
@@ -240,19 +135,17 @@ class GraphGan(object):
         return q_node, rel_node, label
 
     def train_gan(self):
-        """train the whole graph gan network"""
-
         ckpt = tf.train.get_checkpoint_state(config.model_log)
         if ckpt and ckpt.model_checkpoint_path and config.load_model:
-            print("Load the checkpoint: %s" % ckpt.model_checkpoint_path)
+            print('Load the checkpoint: %s.' % ckpt.model_checkpoint_path, flush=True)
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
-        print("Evaluation")
+        print('Evaluation.', flush=True)
         self.write_emb_to_txt()
         self.eval_test()  # evaluation
-
         for epoch in tqdm.tqdm(range(config.max_epochs)):
+            #  save the model
             if epoch % config.save_steps == 0 and epoch > 0:
-                self.saver.save(self.sess, config.model_log + "model.ckpt")
+                self.saver.save(self.sess, config.model_log + 'model.ckpt')
 
             for d_epoch in tqdm.tqdm(range(config.max_epochs_dis)):
                 if d_epoch % config.gen_for_d_iters == 0:  # every gen_for_d_iters round, we generate new data
@@ -316,18 +209,11 @@ class GraphGan(object):
                         trace.extend(self.trace)
                         cnt = cnt + 1
 
-            print("Evaluation")
+            print('Evaluation')
             self.write_emb_to_txt()
             self.eval_test()  # evaluation
 
     def generate_window_pairs(self, sample_path):
-        """
-        given a sample path list from root to a sampled node, generate all the pairs corresponding to the windows size
-        e.g.: [1, 0, 2, 4, 2], window_size = 2 -> [1, 0], [1, 2], [0, 1], [0, 2], [0, 4], [2, 1], [2, 0], [2, 4], [4, 0], [4, 2]
-        :param sample_path:
-        :return:
-        """
-
         sample_path = sample_path[:-1]
         pairs = []
 
@@ -341,43 +227,31 @@ class GraphGan(object):
 
         return pairs
 
-    def padding_neighbor(self, neighbor):
-        return neighbor + (config.max_degree - len(neighbor)) * [0]
-
     def save_emb(self, node_embed, filename):
-        np.savetxt(filename, node_embed, fmt="%10.5f", delimiter='\t')
+        np.savetxt(filename, node_embed, fmt='%10.5f', delimiter='\t')
 
     def write_emb_to_txt(self):
-        """write the emd to the txt file"""
-
         modes = [self.generator, self.discriminator]
         for i in range(2):
             node_embed = self.sess.run(modes[i].node_embed)
             a = np.array(range(self.n_node)).reshape(-1, 1)
             node_embed = np.hstack([a, node_embed])
             node_embed_list = node_embed.tolist()
-            node_embed_str = ["\t".join([str(x) for x in line]) + "\n" for line in node_embed_list]
-            with open(config.emb_filenames[i], "w+") as f:
-                lines = [str(config.n_node) + "\t" + str(config.n_embed) + "\n"] + node_embed_str
+            node_embed_str = ['\t'.join([str(x) for x in line]) + '\n' for line in node_embed_list]
+            with open(config.emb_filenames[i], 'w+') as f:
+                lines = [str(config.n_node) + '\t' + str(config.n_embed) + '\n'] + node_embed_str
                 f.writelines(lines)
 
-
     def eval_test(self):
-        """do the evaluation when training
-
-        :return:
-        """
         results = []
-        if config.app == "link_prediction":
-            for i in range(2):
-                LPE = elp.LinkPredictEval(config.emb_filenames[i], config.test_filename, config.test_neg_filename, config.n_node, config.n_embed)
-                result = LPE.eval_link_prediction()
-                results.append(config.modes[i] + ":" + str(result) + "\n")
-
-
-        with open(config.result_filename, mode="a+") as f:
+        for i in range(2):
+            LPE = elp.LinkPredictEval(config.emb_filenames[i], config.test_filename, config.test_neg_filename, config.n_node, config.n_embed)
+            result = LPE.eval_link_prediction()
+            results.append(config.modes[i] + ':' + str(result) + '\n')
+        with open(config.result_filename, mode='a+') as f:
             f.writelines(results)
 
-if __name__ == "__main__":
-    GraphGan = GraphGan()
-    GraphGan.train_gan()
+
+if __name__ == '__main__':
+    graphgan = GraphGan()
+    graphgan.train_gan()
