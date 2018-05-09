@@ -1,6 +1,6 @@
 import networkx as nx
 from gensim.models import Word2Vec
-from node2vec.graph import Graph
+from Node2Vec.graph import Graph
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -19,30 +19,20 @@ args = parser.parse_args()
 edgelist_file = 'cora.edgelist'
 output_file = 'result.emd'
 
+if not args.weighted:
+    nx_graph = nx.read_edgelist(edgelist_file,  create_using=nx.DiGraph())
+    for edge in nx_graph.edges():
+        nx_graph[edge[0]][edge[1]]['weight'] = 1
+else:
+    nx_graph = nx.read_edgelist(edgelist_file,  data=(('weight', float), ), create_using=nx.DiGraph())
+if not args.directed:
+    nx_graph = nx_graph.to_undirected()
 
-def read_graph():
-    if not args.weighted:
-        nx_graph = nx.read_edgelist(edgelist_file,  create_using=nx.DiGraph())
-        for edge in nx_graph.edges():
-            nx_graph[edge[0]][edge[1]]['weight'] = 1
-    else:
-        nx_graph = nx.read_edgelist(edgelist_file,  data=(('weight', float), ), create_using=nx.DiGraph())
+graph = Graph(nx_graph, args.directed, args.p, args.q, args.num_walks, args.walk_length)
+walks = graph.walks()
 
-    if not args.directed:
-        nx_graph = nx_graph.to_undirected()
-
-    return nx_graph
-
-
-def learn_node_features(walks, dim, window, workers, epoch, output):
-    emb_walks = [[str(n) for n in walk] for walk in walks]
-    node_model = Word2Vec(emb_walks, size=dim, window=window, min_count=0, sg=1, workers=workers, iter=epoch)
-    node_model.wv.save_word2vec_format(output)
-
-
-if __name__ == '__main__':
-    nx_graph = read_graph()
-    graph = Graph(nx_graph, is_directed=nx.is_directed(nx_graph), p=args.p, q=args.q)
-    graph.preprocess_transition_probs()
-    walks = graph.simulate_walks(num_walks=args.num_walks, walk_length=args.walk_length)
-    learn_node_features(walks, args.dim, args.window_size, args.workers, args.epoch, output_file)
+emb_walks = [[str(w) for w in single_walk] for single_walk in walks]
+node_model = Word2Vec(
+    emb_walks, size=args.dim, window=args.window_size,
+    min_count=0, sg=1, workers=args.workers, iter=args.epoch)
+node_model.wv.save_word2vec_format(output_file)

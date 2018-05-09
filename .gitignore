@@ -1,5 +1,6 @@
 reference/
 data/
+submit/
 .idea/
 */__pycache__
 README.md
