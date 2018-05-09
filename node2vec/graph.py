@@ -33,8 +33,9 @@ class Graph:
     def node2vec_walk(self, walk_length, start_node):
         single_walk = [start_node]
         neighbors = sorted(self.graph.neighbors(start_node))
-        next_node = neighbors[self.alias_draw(self.alias_nodes[start_node][0], self.alias_nodes[start_node][1])]
-        single_walk.append(next_node)
+        if len(neighbors) > 0:
+            next_node = neighbors[self.alias_draw(self.alias_nodes[start_node][0], self.alias_nodes[start_node][1])]
+            single_walk.append(next_node)
         while len(neighbors) > 0 and len(single_walk) < walk_length:
             cur = single_walk[-1]
             neighbors = sorted(self.graph.neighbors(cur))

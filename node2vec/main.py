@@ -3,7 +3,7 @@ import networkx as nx
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 from gensim.models import Word2Vec
-from node2vec.graph import Graph
+from graph import Graph
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,7 @@ parser.add_argument('--weighted', type=bool, default=False, help=u'If the nodes 
 parser.add_argument('--directed', type=bool, default=True, help=u'If the edges are directed, default True.')
 parser.add_argument('--window_size', type=int, default=10, help=u'Window size, default 10.')
 parser.add_argument('--reverse_edges', type=bool, default=True,
-                    help=u'Whether the edges in edgelist_file need reversing(True for cora), default True.')
+                    help=u'Whether the edges in edge-list_file need reversing(True for cora), default True.')
 parser.add_argument('-p', type=float, default=1.0, help=u'Return hyperparameter p, default 1.0.')
 parser.add_argument('-q', type=float, default=1.0, help=u'Inout hyperparameter q, default 1.0.')
 args = parser.parse_args()
@@ -32,14 +32,14 @@ if not args.weighted:
         nx_graph[edge[0]][edge[1]]['weight'] = 1
 else:
     nx_graph = nx.read_edgelist(edgelist_file, data=(('weight', float),), create_using=using_graph)
-if args.reverse_edges:
+if args.directed and args.reverse_edges:
     nx_graph = nx_graph.reverse()
 
 print('Initializing node2vec graph.', flush=True)
 graph = Graph(nx_graph, args.directed, args.p, args.q, args.num_walks, args.walk_length)
 print('Processing node2vec walking.', flush=True)
 walks = graph.walks()
-print('Shape of walks = Nodes num * Walk length: {} * {}'.format(*np.shape(walks)))
+# print('Shape of walks = Nodes num * Walk length: {} * {}'.format(*np.shape(walks)))
 
 print('Word2Vec learning.', flush=True)
 emb_walks = [[str(w) for w in single_walk] for single_walk in walks]
