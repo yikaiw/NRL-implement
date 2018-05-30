@@ -4,3 +4,4 @@ result/
 .idea/
 */__pycache__
 README.md
+__pycache__/

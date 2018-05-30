@@ -7,7 +7,7 @@ from graph import Graph
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dim', type=int, default=128, help=u'Dimension of feature vectors, default 128.')
+parser.add_argument('--embed_dim', type=int, default=128, help=u'Dimension of feature vectors, default 128.')
 parser.add_argument('--epoch', type=int, default=20, help=u'Training epochs, default 20.')
 parser.add_argument('--workers', type=int, default=4, help=u'Number of parallel workers, default 4.')
 parser.add_argument('--walk_length', type=int, default=80, help=u'Length of each walk, default 80.')
@@ -19,11 +19,11 @@ parser.add_argument('--window_size', type=int, default=10, help=u'Window size, d
 parser.add_argument('--reverse_edges', type=bool, default=True,
                     help=u'Whether edges in edge-list_file need reversing, True for cora, default True.')
 parser.add_argument('-p', type=float, default=1.0, help=u'Return hyperparameter p, default 1.0.')
-parser.add_argument('-q', type=float, default=1.0, help=u'Inout hyperparameter q, default 1.0.')
+parser.add_argument('-q', type=float, default=0.5, help=u'Inout hyperparameter q, default 1.0.')
 args = parser.parse_args()
 
-edgelist_file = 'data/cora/cora.cites'
-node_emb_file = 'result/cora/result.csv'
+edgelist_file = '../data/cora/cora.cites'
+node_emb_file = '../results/cora/node2vec/result.csv'
 
 print('Building networkx graph.', flush=True)
 using_graph = nx.DiGraph() if args.directed else nx.Graph()
@@ -45,7 +45,7 @@ print('Shape of walks:', np.shape(walks), flush=True)
 print('Word2Vec learning.', flush=True)
 emb_walks = [[str(w) for w in single_walk] for single_walk in walks]
 node_model = Word2Vec(
-    emb_walks, size=args.dim, window=args.window_size,
+    emb_walks, size=args.embed_dim, window=args.window_size,
     min_count=0, sg=1, workers=args.workers, iter=args.epoch)
 print('Saving results.', flush=True)
 node_model.wv.save_word2vec_format(node_emb_file)
