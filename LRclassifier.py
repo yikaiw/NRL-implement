@@ -9,9 +9,12 @@ class_dim = 7
 learning_rate = tf.train.exponential_decay(
     learning_rate=0.1, global_step=10000, decay_steps=100, decay_rate=0.98, staircase=True)
 
-method = 'node2vec'  # DeepWalk, LINE, node2vec
-data = util_cora.Dataset(method)
-if method == 'LINE':
+FLAGS = tf.flags.FLAGS
+tf.flags.DEFINE_string(
+    'method', 'node2vec', 'Method selected from DeepWalk, LINE and node2vec, default node2vec.')
+
+data = util_cora.Dataset(FLAGS.method)
+if FLAGS.method == 'LINE':
     embed_dim *= 2
 X = tf.placeholder(tf.float32, [None, embed_dim])
 y = tf.placeholder(tf.int32, [None, ])

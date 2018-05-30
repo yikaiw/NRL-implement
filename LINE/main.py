@@ -20,8 +20,8 @@ parser.add_argument('--reverse_edges', type=bool, default=True,
                     help=u'Whether edges in edge-list_file need reversing, True for cora, default True.')
 args = parser.parse_args()
 
-edgelist_file = '../data/cora/cora.cites'
-node_emb_file = '../results/cora/LINE/result.csv'
+edgelist_file = 'data/cora/cora.cites'
+node_emb_file = 'results/cora/LINE/result2.csv'
 
 print('Building networkx graph.', flush=True)
 using_graph = nx.DiGraph() if args.directed else nx.Graph()

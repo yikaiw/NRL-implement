@@ -22,8 +22,8 @@ parser.add_argument('-p', type=float, default=1.0, help=u'Return hyperparameter 
 parser.add_argument('-q', type=float, default=0.5, help=u'Inout hyperparameter q, default 1.0.')
 args = parser.parse_args()
 
-edgelist_file = '../data/cora/cora.cites'
-node_emb_file = '../results/cora/node2vec/result.csv'
+edgelist_file = 'data/cora/cora.cites'
+node_emb_file = 'results/cora/node2vec/result.csv'
 
 print('Building networkx graph.', flush=True)
 using_graph = nx.DiGraph() if args.directed else nx.Graph()
