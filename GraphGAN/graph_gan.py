@@ -1,18 +1,19 @@
-from graphgan.discriminator import Discriminator
-from graphgan.generator import Generator
-import graphgan.utils as utils
+from discriminator import Discriminator
+from generator import Generator
+import utils as utils
 import collections
 import tqdm
 import copy
 import numpy as np
 import tensorflow as tf
-import graphgan.config as config
-import graphgan.eval_link_prediction as elp
+import config as config
+import eval_link_prediction as elp
 
 
 class GraphGan(object):
     def __init__(self):
         self.n_node, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
+        self.g = nx.read_edgelist(config.train_filename)
         self.root_nodes = [i for i in range(self.n_node)]
         self.discriminator, self.generator = None, None
         self.saver = tf.train.Saver()
@@ -76,7 +77,7 @@ class GraphGan(object):
                 node_select = node_check
             n = n + 1
         return sample
-    
+
     def softmax(self, x):
         e_x = np.exp(x - np.max(x))  # for numberation stablity
         return e_x / e_x.sum()
@@ -239,7 +240,7 @@ class GraphGan(object):
             node_embed_list = node_embed.tolist()
             node_embed_str = ['\t'.join([str(x) for x in line]) + '\n' for line in node_embed_list]
             with open(config.emb_filenames[i], 'w+') as f:
-                lines = [str(config.n_node) + '\t' + str(config.n_embed) + '\n'] + node_embed_str
+                lines = [str(config.n_node) + '\t' + str(config.embed_dim) + '\n'] + node_embed_str
                 f.writelines(lines)
 
     def eval_test(self):

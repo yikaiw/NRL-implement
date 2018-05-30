@@ -15,7 +15,7 @@ There are two datasets located in the path ./data/:
 
 
 ## Training
-First, locate at the root path of the project:
+First, locate at the **root path** of the project:
 ```
 cd NRL-implement
 ```
@@ -42,7 +42,7 @@ Use logistic regression as classifier to evaluate the quality of embeddings prod
 ```
 python LRclassifier.py --method DeepWalk
 ```
-Here the method can be replaced by LINE and node2vec.
+where DeepWalk can be replaced by LINE and node2vec.
 
 
 For GraphGAN:

@@ -22,12 +22,15 @@ class Dataset(object):
                     self.type[type] = class_dim
                 X.append(embeds[node])
                 y.append(self.type[type])
-        data_len = len(y)
-        permutation = np.random.permutation(data_len)
-        train_split = int(0.7 * data_len)
+        # data_len = len(y)
+        # permutation = np.random.permutation(data_len)
+        # train_split = int(0.7 * data_len)
+        # X, y = np.array(X), np.array(y)
+        # self.train_X, self.train_y = X[permutation[:train_split]], y[permutation[:train_split]]
+        # self.test_X, self.test_y = X[permutation[train_split:]], y[permutation[train_split:]]
         X, y = np.array(X), np.array(y)
-        self.train_X, self.train_y = X[permutation[:train_split]], y[permutation[:train_split]]
-        self.test_X, self.test_y = X[permutation[train_split:]], y[permutation[train_split:]]
+        self.train_X, self.train_y = X[:200], y[:200]
+        self.test_X, self.test_y = X[500: 1500], y[500: 1500]
 
 
 if __name__ == '__main__':
