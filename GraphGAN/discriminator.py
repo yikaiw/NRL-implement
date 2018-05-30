@@ -1,8 +1,7 @@
-# the discriminator class
 import tensorflow as tf
 
 
-class Discriminator(object):
+class Dis(object):
     def __init__(self, n_node, embed_dim, lamb, learning_rate):
         self.n_node = n_node
         with tf.variable_scope('discriminator'):

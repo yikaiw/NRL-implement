@@ -16,10 +16,8 @@ max_epochs_gen = 30  # loop number for generator
 max_epochs_dis = 30  # loop number for discriminator
 
 gen_for_d_iters = 10  # iteration numbers for generate new data for discriminator
-max_degree = 0  # the max node degree of the network
 model_log = '../log/iteration/'
 
-use_mul = False # control if use the multiprocessing when constructing trees
 load_model = False  # if load the model for continual training
 gen_update_iter = 200
 window_size = 3
@@ -30,5 +28,5 @@ test_neg_filename = 'data/tencent/test_edges_false.npy'
 emb_filenames = ['results/tencent/GraphGAN/embeds_gen.csv', 'results/tencent/GraphGAN/embeds_dis.csv']
 result_filename = 'results/tencent/GraphGAN/result.csv'
 embed_dim = 50
-n_node = 5242
+node_num = 5242
 modes = ['dis', 'gen']

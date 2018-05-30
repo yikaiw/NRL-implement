@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Generator(object):
+class Gen(object):
     def __init__(self, n_node, embed_dim, lamb, learning_rate):
         self.n_node = n_node
         with tf.variable_scope('Generator'):
