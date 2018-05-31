@@ -1,11 +1,9 @@
 import numpy as np
 import tensorflow as tf
-import collections
 from tqdm import tqdm
-import copy
 from discriminator import Dis
 from generator import Gen
-import utils as utils
+import utils_graphgan as utils
 import config as config
 import eval_link_prediction as elp
 
@@ -17,7 +15,7 @@ def softmax(x):
 class GraphGan(object):
     def __init__(self):
         self.node_num, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
-        self.root_nodes = np.arange(self.node_num)]
+        self.root_nodes = np.arange(self.node_num)
         self.build_gan()
         self.trees = utils.construct_tree(self.root_nodes, self.linked_nodes)
         self.tf_config()
