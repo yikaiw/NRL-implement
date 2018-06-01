@@ -5,8 +5,8 @@ import collections
 
 
 def read_edges(train_filename, test_filename=None):
-    train_edges = read_edges_from_file(train_filename)
-    test_edges = read_edges_from_file(test_filename) if test_filename else []
+    train_edges = np.load(train_filename)
+    test_edges = np.load(test_filename) if test_filename else []
     nodes = set()
     linked_nodes = {}
     for edge in train_edges:
@@ -20,14 +20,7 @@ def read_edges(train_filename, test_filename=None):
             nodes.add(edge[i])
             if edge[i] not in linked_nodes:
                 linked_nodes[edge[i]] = []
-    return len(nodes), linked_nodes
-
-
-def read_edges_from_file(filename):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-        edges = [list(map(int, line.split())) for line in lines]
-    return edges
+    return list(nodes), linked_nodes
 
 
 def read_pretrained_emd(filename, n_node, n_embed):

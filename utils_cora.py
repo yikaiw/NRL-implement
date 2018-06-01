@@ -30,6 +30,9 @@ class Dataset(object):
         # self.test_X, self.test_y = X[permutation[train_split:]], y[permutation[train_split:]]
         X, y = np.array(X), np.array(y)
         self.train_X, self.train_y = X[:200], y[:200]
+        self.valid_X, self.valid_y = X[200: 500], y[200: 500]
+        self.X = np.concatenate([self.train_X, self.valid_X])
+        self.y = np.concatenate([self.train_y, self.valid_y])
         self.test_X, self.test_y = X[500: 1500], y[500: 1500]
 
 

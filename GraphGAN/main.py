@@ -14,8 +14,8 @@ def softmax(x):
 
 class GraphGan(object):
     def __init__(self):
-        self.node_num, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
-        self.root_nodes = np.arange(self.node_num)
+        self.root_nodes, self.linked_nodes = utils.read_edges(config.train_filename, config.test_filename)
+        self.node_num = len(self.root_nodes)
         self.build_gan()
         self.trees = utils.construct_tree(self.root_nodes, self.linked_nodes)
         self.tf_config()
@@ -80,7 +80,7 @@ class GraphGan(object):
         self.samples_label = []
         all_score = self.sess.run(self.gen.all_score)
         for u in self.root_nodes:
-            if np.random.rand() < config.update_ratio:  #
+            if np.random.rand() < config.update_ratio:
                 pos = self.linked_nodes[u]  # pos samples
                 if len(pos) < 1:
                     continue

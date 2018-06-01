@@ -6,7 +6,7 @@ class Dis(object):
         self.n_node = n_node
         with tf.variable_scope('discriminator'):
             self.node_embed = tf.get_variable(
-                name='node_embed', shape=embed_dim,
+                name='node_embed', shape=(1, embed_dim),
                 initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.1),
                 trainable=True)
             self.node_b = tf.Variable(tf.zeros([self.n_node]))

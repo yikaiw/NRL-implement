@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import accuracy_score
-import utils
+import utils_graphgan as utils
 
 
 class LinkPredictEval(object):

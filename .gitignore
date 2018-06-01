@@ -1,7 +1,5 @@
 reference/
-result/
 .idea/
 */__pycache__
-README.md
 __pycache__/
 *try.py

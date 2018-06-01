@@ -48,7 +48,7 @@ student id,method1,accuracy,method2,accuracy
 2017310719,,,,
 2017310721,,,,
 2017310722,,,,
-2017310740,DeepWalk,0.712,LINE,0.701,node2vec,0.0.729
+2017310740,DeepWalk,0.648,LINE,0.658,node2vec,0.634
 2017310742,,,,
 2017310757,,,,
 2017310759,,,,

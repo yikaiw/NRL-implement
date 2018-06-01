@@ -48,5 +48,7 @@ where DeepWalk can be replaced by LINE and node2vec.
 For GraphGAN:
 
 ```
-python GraphGAN/eval_link_prediction.py
+python GraphGAN/main.py
 ```
+
+which uses tencent as dataset.
